@@ -52,9 +52,13 @@ export const useZoneStore = create<ZoneState>((set, get) => ({
   },
 
   addPost: (post) => {
-    set((state) => ({
-      posts: [...state.posts, post],
-    }));
+    set((state) => {
+      const filteredPosts = state.posts.filter(p => p.id !== post.id);
+      
+      return {
+        posts: [post, ...filteredPosts],
+      };
+    });
     get().updateZoneStats();
   },
 

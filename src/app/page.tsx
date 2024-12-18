@@ -17,7 +17,7 @@ export default async function Home() {
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Welcome to DecentraPost</h1>
+        <h1 className="text-3xl font-bold mb-8">Welcome to Unfoldinn</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
           A decentralized social platform built on Archethic blockchain, featuring dynamic Speed Zones for content relevance.
         </p>

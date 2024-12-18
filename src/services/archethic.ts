@@ -106,40 +106,62 @@ export class ArchethicService {
   private static instance: ArchethicService;
   private posts: Post[] = [...mockPosts];
 
-  public constructor() {}
+  public constructor() {
+    console.log('ArchethicService constructor - Initial posts:', this.posts); // Debug initial posts
+  }
 
   public static getInstance(): ArchethicService {
     if (!ArchethicService.instance) {
       ArchethicService.instance = new ArchethicService();
+      console.log('Created new ArchethicService instance'); // Debug instance creation
     }
     return ArchethicService.instance;
   }
 
   // Mock function to create a post transaction
-  async createPost(post: Omit<Post, 'id' | 'timestamp' | 'metrics'>): Promise<Post> {
+  async createPost(postData: Partial<Post>): Promise<Post> {
     // Simulate blockchain delay
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    // Create a new post with default values and provided data
     const newPost: Post = {
-      ...post,
       id: `post_${Date.now()}`,
+      content: postData.content || '',
+      author: postData.author || {
+        address: '',
+        username: '',
+        influence: 0,
+      },
       timestamp: new Date().toISOString(),
+      zone: postData.zone || 'fast',
+      engagement: {
+        likes: 0,
+        echoes: 0,
+        comments: 0,
+      },
+      metadata: {
+        type: postData.metadata?.type || 'text',
+        tags: postData.metadata?.tags || [],
+      },
       metrics: {
         engagementVelocity: 0,
-        qualityScore: this.calculateInitialQualityScore(post),
+        qualityScore: 0.5,
       },
     };
 
+    // Add to mock posts array
     this.posts.unshift(newPost);
+
     return newPost;
   }
 
   // Mock function to fetch posts by zone
   async getPostsByZone(zone: 'fast' | 'cruise' | 'archive'): Promise<Post[]> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    return this.posts.filter(post => post.zone === zone);
+    console.log('getPostsByZone called with zone:', zone); // Debug zone parameter
+    console.log('Current posts in service:', this.posts); // Debug available posts
+    const filteredPosts = this.posts.filter(post => post.zone === zone);
+    console.log('Filtered posts:', filteredPosts); // Debug filtered results
+    return filteredPosts;
   }
 
   // Mock function to engage with a post (like, echo, comment)

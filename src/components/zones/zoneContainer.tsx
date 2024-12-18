@@ -1,13 +1,17 @@
 'use client';
 
 import React from 'react';
-import { Clock, Flame, Archive, TrendingUp, Heart, MessageCircle, Share } from 'lucide-react';
+import { Clock, Flame, Archive, TrendingUp, Heart, MessageCircle, Share, MessageSquare, GitBranch, Repeat, BookOpen } from 'lucide-react';
 import { CreatePost } from '@/components/posts/CreatePost';
 import { usePosts } from '@/hooks/usePosts';
 import { Button } from '@/components/ui/button';
 import { useEnergyStore } from '@/store/energyStore';
 import { toast } from '@/components/ui/use-toast';
 import { ZoneType } from '@/store/zoneStore';
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { PostCard } from '@/components/posts/PostCard';
 
 const calculatePostAge = (timestamp: string): { zone: ZoneType; timeLeft: number } => {
   const now = Date.now();
@@ -25,10 +29,29 @@ const ZoneIcons = {
   archive: Archive,
 } as const;
 
+const categoryColors = {
+  text: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  thread: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+  echo: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  guide: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+} as const;
+
+const categoryIcons = {
+  text: MessageSquare,
+  thread: GitBranch,
+  echo: Repeat,
+  guide: BookOpen,
+} as const;
+
 const ZoneContainer = () => {
   const [currentZone, setCurrentZone] = React.useState<ZoneType>('fast');
   const { useEnergy, actionCosts } = useEnergyStore();
   const { posts, isLoading, engageWithPost } = usePosts(currentZone);
+
+  React.useEffect(() => {
+    console.log('ZoneContainer received posts:', posts);
+    console.log('First post in ZoneContainer:', posts?.[0]);
+  }, [posts]);
 
   const handleEngagement = async (postId: string, type: 'like' | 'echo' | 'comment') => {
     if (!useEnergy(actionCosts[type])) {
@@ -91,85 +114,37 @@ const ZoneContainer = () => {
       {/* Posts Display */}
       <div className="space-y-4">
         {isLoading ? (
-          // Loading skeleton
           Array.from({ length: 3 }).map((_, i) => (
-            <div 
-              key={i}
-              className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm animate-pulse"
-            >
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
-                  <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="space-y-0 pb-2">
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded" />
+              </CardContent>
+              <CardFooter>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+              </CardFooter>
+            </Card>
           ))
         ) : (
           posts.map((post) => {
             const { timeLeft } = calculatePostAge(post.timestamp);
             
             return (
-              <div 
+              <PostCard 
                 key={post.id}
-                className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white font-bold">
-                      {post.author.username[0].toUpperCase()}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">@{post.author.username}</span>
-                      {currentZone !== 'archive' && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {timeLeft.toFixed(1)}h remaining
-                        </div>
-                      )}
-                    </div>
-                    <p className="mt-1 text-gray-600 dark:text-gray-300">{post.content}</p>
-                    <div className="mt-3 flex items-center space-x-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEngagement(post.id, 'like')}
-                        disabled={engageWithPost.isPending}
-                      >
-                        <Heart className="h-4 w-4 mr-1" />
-                        {post.engagement.likes}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEngagement(post.id, 'comment')}
-                        disabled={engageWithPost.isPending}
-                      >
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        {post.engagement.comments}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEngagement(post.id, 'echo')}
-                        disabled={engageWithPost.isPending}
-                      >
-                        <Share className="h-4 w-4 mr-1" />
-                        {post.engagement.echoes}
-                      </Button>
-                      {currentZone === 'fast' && (
-                        <span className="text-xs text-gray-500">
-                          {post.metrics.engagementVelocity.toFixed(1)} eng/hr
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                post={post}
+                className={cn(
+                  post.zone === 'fast' && "border-l-4 border-yellow-500"
+                )}
+                onEngagement={(type) => handleEngagement(post.id, type)}
+              />
             );
           })
         )}

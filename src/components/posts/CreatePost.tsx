@@ -3,129 +3,152 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PostSchema } from '@/types/post';
-import { useEnergyStore } from '@/store/energyStore';
+import { PostSchema } from '@/lib/validators/post';
+import { usePosts } from '@/hooks/usePosts';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
-import { usePosts } from '@/hooks/usePosts';
+import { Loader2, X } from 'lucide-react';
 
-type CreatePostFormData = {
+interface PostFormData {
   content: string;
   type: 'text' | 'thread' | 'echo' | 'guide';
   tags: string[];
-};
+}
 
-export function CreatePost() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { useEnergy, actionCosts } = useEnergyStore();
+export const CreatePost = () => {
+  const [isPosting, setIsPosting] = useState(false);
   const { createPost } = usePosts('fast');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
-  const form = useForm<CreatePostFormData>({
+  const form = useForm<PostFormData>({
+    resolver: zodResolver(PostSchema),
     defaultValues: {
       content: '',
       type: 'text',
       tags: [],
     },
-    resolver: zodResolver(PostSchema.pick({ 
-      content: true,
-      metadata: true 
-    })),
   });
 
-  const onSubmit = async (data: CreatePostFormData) => {
-    setIsSubmitting(true);
-    
-    // Check if user has enough energy
-    if (!useEnergy(actionCosts.post)) {
-      toast({
-        title: "Not enough energy",
-        description: "Please wait for your energy to regenerate.",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
+  const onSubmit = async (data: PostFormData) => {
     try {
-      // Create new post
+      setIsPosting(true);
+
+      // Create post using React Query mutation
       await createPost.mutateAsync({
         content: data.content,
         author: {
-          address: "placeholder-address", // Will be replaced with actual user address
-          username: "placeholder-user", // Will be replaced with actual username
+          address: 'mock_address',
+          username: 'current_user',
           influence: 0,
         },
         zone: 'fast',
+        metadata: {
+          type: data.type,
+          tags: tags,
+        },
         engagement: {
           likes: 0,
           echoes: 0,
           comments: 0,
         },
-        metadata: {
-          type: data.type,
-          tags: data.tags,
-        },
       });
 
       // Reset form
       form.reset();
-    } catch (error) {
-      // Error handling is done in the usePosts hook
-      console.error('Failed to create post:', error);
+      setTags([]);
+
+    } catch (err) {
+      console.error('Failed to create post:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to create post. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsPosting(false);
     }
   };
 
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      if (!tags.includes(tagInput.trim())) {
+        setTags([...tags, tagInput.trim()]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <Textarea
-            placeholder="What's happening?"
-            className="min-h-[100px] resize-none"
-            {...form.register('content')}
-          />
-          {form.formState.errors.content && (
-            <p className="text-sm text-red-500 mt-1">
-              {form.formState.errors.content.message}
-            </p>
-          )}
-        </div>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Textarea
+        {...form.register('content')}
+        placeholder="What's happening?"
+        className="min-h-[100px] resize-none"
+        disabled={isPosting}
+      />
+      
+      {/* Post type selection */}
+      <select {...form.register('type')} className="w-full p-2 border rounded">
+        <option value="text">Regular Post</option>
+        <option value="thread">Thread</option>
+        <option value="guide">Guide</option>
+      </select>
 
-        <div className="flex items-center space-x-4">
-          <Select
-            defaultValue="text"
-            onValueChange={(value) => form.setValue('type', value as CreatePostFormData['type'])}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Post type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="text">Text Post</SelectItem>
-              <SelectItem value="thread">Thread</SelectItem>
-              <SelectItem value="echo">Echo</SelectItem>
-              <SelectItem value="guide">Guide</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* Tags input */}
+      <div className="space-y-2">
+        <Input
+          type="text"
+          placeholder="Add tags (press Enter)"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={handleAddTag}
+          disabled={isPosting}
+        />
+        
+        {/* Tags display */}
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {tags.map(tag => (
+              <div 
+                key={tag}
+                className="flex items-center gap-1 bg-secondary px-2 py-1 rounded-full text-sm"
+              >
+                #{tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="hover:text-destructive"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-          <Button 
-            type="submit" 
-            disabled={isSubmitting || createPost.isPending}
-            className="ml-auto"
-          >
-            {isSubmitting || createPost.isPending ? 'Creating...' : 'Post'}
-          </Button>
-        </div>
-      </form>
-    </div>
+      <Button 
+        type="submit" 
+        disabled={isPosting} 
+        className="w-full"
+      >
+        {isPosting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Posting...
+          </>
+        ) : (
+          'Post'
+        )}
+      </Button>
+    </form>
   );
-} 
+}; 

@@ -7,7 +7,7 @@ import { QueryProvider } from '@/providers/QueryProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'DecentraPost',
+  title: 'Unfoldinn',
   description: 'A decentralized social platform built on Archethic blockchain',
 };
 
@@ -28,7 +28,7 @@ export default function RootLayout({
                   href="/"
                   className="text-xl font-bold text-purple-600 dark:text-purple-400"
                 >
-                  DecentraPost
+                  Unfoldinn
                 </Link>
                 
                 <nav className="flex items-center space-x-4">

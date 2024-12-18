@@ -3,11 +3,10 @@ import { ArchethicService } from '@/services/archethic';
 import { Post } from '@/types/post';
 import { useToast } from '@/components/ui/use-toast';
 
-const archethicService = ArchethicService.getInstance();
-
 export function usePosts(zone: 'fast' | 'cruise' | 'archive') {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const archethicService = ArchethicService.getInstance();
 
   // Query for fetching posts
   const {
@@ -16,8 +15,14 @@ export function usePosts(zone: 'fast' | 'cruise' | 'archive') {
     error,
   } = useQuery({
     queryKey: ['posts', zone],
-    queryFn: () => archethicService.getPostsByZone(zone),
-    staleTime: zone === 'fast' ? 30000 : 60000, // Refresh more frequently for fast lane
+    queryFn: async () => {
+      console.log('Fetching posts for zone:', zone);
+      const posts = await archethicService.getPostsByZone(zone);
+      console.log('Raw posts from service:', posts);
+      console.log('First post metadata:', posts[0]?.metadata);
+      return posts;
+    },
+    staleTime: zone === 'fast' ? 30000 : 60000,
   });
 
   // Mutation for creating a new post
