@@ -1,47 +1,37 @@
+'use client';
+
 import { type Hall } from '@/types/hall';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
 import { Hash } from 'lucide-react';
 
-interface HallIconProps extends React.HTMLAttributes<HTMLDivElement> {
+interface HallIconProps {
   hall: Hall;
   size?: 'sm' | 'md' | 'lg';
 }
 
-const sizes = {
-  sm: 'h-6 w-6',
-  md: 'h-8 w-8',
+const sizeClasses = {
+  sm: 'h-8 w-8',
+  md: 'h-10 w-10',
   lg: 'h-12 w-12',
-};
+} as const;
 
-export function HallIcon({ hall, size = 'md', className, ...props }: HallIconProps) {
-  if (hall.icon) {
-    return (
-      <div className={cn('relative rounded-lg overflow-hidden', sizes[size], className)} {...props}>
-        <Image
-          src={hall.icon}
-          alt={hall.name}
-          fill
-          className="object-cover"
-        />
-      </div>
-    );
-  }
-
+export function HallIcon({ hall, size = 'md' }: HallIconProps) {
   return (
-    <div 
+    <div
       className={cn(
-        'flex items-center justify-center rounded-lg bg-muted',
-        sizes[size],
-        className
+        "flex items-center justify-center rounded-lg bg-muted",
+        sizeClasses[size]
       )}
-      {...props}
     >
-      <Hash className={cn('text-muted-foreground', {
-        'h-4 w-4': size === 'sm',
-        'h-5 w-5': size === 'md',
-        'h-8 w-8': size === 'lg',
-      })} />
+      {hall.icon ? (
+        <img
+          src={hall.icon}
+          alt={`${hall.name} icon`}
+          className="w-full h-full object-cover rounded-lg"
+        />
+      ) : (
+        <Hash className="h-5 w-5 text-muted-foreground" />
+      )}
     </div>
   );
 } 

@@ -1,3 +1,5 @@
+'use client';
+
 import { type Hall } from '@/types/hall';
 import { HallIcon } from './HallIcon';
 import { Button } from '@/components/ui/button';

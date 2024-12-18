@@ -80,6 +80,182 @@ const mockPosts: Post[] = [
       qualityScore: 0.98,
     },
   },
+  // Adding more mock posts for scrolling test
+  {
+    id: '4',
+    content: 'Just discovered an amazing optimization technique for smart contracts! Here\'s how it works...',
+    author: {
+      address: 'archethic_address_3',
+      username: 'charlie',
+      influence: 88,
+    },
+    hallId: '1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+    zone: 'fast',
+    engagement: {
+      likes: 8,
+      echoes: 2,
+      comments: 3,
+    },
+    metadata: {
+      type: 'text',
+      tags: ['optimization', 'smart-contracts'],
+    },
+    metrics: {
+      engagementVelocity: 15,
+      qualityScore: 0.82,
+    },
+  },
+  {
+    id: '5',
+    content: 'Guide: Advanced Transaction Chain Patterns in Archethic',
+    author: {
+      address: 'archethic_address_4',
+      username: 'dave',
+      influence: 95,
+    },
+    hallId: '1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 minutes ago
+    zone: 'fast',
+    engagement: {
+      likes: 15,
+      echoes: 7,
+      comments: 4,
+    },
+    metadata: {
+      type: 'guide',
+      tags: ['advanced', 'chains', 'patterns'],
+    },
+    metrics: {
+      engagementVelocity: 25,
+      qualityScore: 0.91,
+    },
+  },
+  {
+    id: '6',
+    content: 'Weekly Update: Archethic Network Statistics and Growth Metrics',
+    author: {
+      address: 'archethic_address_5',
+      username: 'emma',
+      influence: 82,
+    },
+    hallId: '1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 48 hours ago
+    zone: 'cruise',
+    engagement: {
+      likes: 67,
+      echoes: 23,
+      comments: 15,
+    },
+    metadata: {
+      type: 'text',
+      tags: ['statistics', 'growth', 'network'],
+    },
+    metrics: {
+      engagementVelocity: 8,
+      qualityScore: 0.88,
+    },
+  },
+  {
+    id: '7',
+    content: 'Research: Comparing Archethic\'s ARCH Consensus with Other Protocols',
+    author: {
+      address: 'archethic_address_2',
+      username: 'bob',
+      influence: 92,
+    },
+    hallId: '1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 40).toISOString(), // 40 hours ago
+    zone: 'cruise',
+    engagement: {
+      likes: 89,
+      echoes: 34,
+      comments: 21,
+    },
+    metadata: {
+      type: 'thread',
+      tags: ['research', 'consensus', 'comparison'],
+    },
+    metrics: {
+      engagementVelocity: 12,
+      qualityScore: 0.94,
+    },
+  },
+  {
+    id: '8',
+    content: 'Historical Analysis: First Year of Archethic Mainnet',
+    author: {
+      address: 'archethic_address_1',
+      username: 'alice',
+      influence: 75,
+    },
+    hallId: '1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 80).toISOString(), // 80 hours ago
+    zone: 'archive',
+    engagement: {
+      likes: 156,
+      echoes: 78,
+      comments: 45,
+    },
+    metadata: {
+      type: 'guide',
+      tags: ['history', 'analysis', 'mainnet'],
+    },
+    metrics: {
+      engagementVelocity: 1,
+      qualityScore: 0.96,
+    },
+  },
+  {
+    id: '9',
+    content: 'Community Spotlight: Best Projects Built on Archethic in 2023',
+    author: {
+      address: 'archethic_address_3',
+      username: 'charlie',
+      influence: 88,
+    },
+    hallId: '1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 75).toISOString(), // 75 hours ago
+    zone: 'archive',
+    engagement: {
+      likes: 234,
+      echoes: 112,
+      comments: 67,
+    },
+    metadata: {
+      type: 'thread',
+      tags: ['community', 'projects', 'spotlight'],
+    },
+    metrics: {
+      engagementVelocity: 1.5,
+      qualityScore: 0.97,
+    },
+  },
+  {
+    id: '10',
+    content: 'Breaking: New Partnership Announcement!',
+    author: {
+      address: 'archethic_address_5',
+      username: 'emma',
+      influence: 82,
+    },
+    hallId: '1',
+    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 minutes ago
+    zone: 'fast',
+    engagement: {
+      likes: 5,
+      echoes: 2,
+      comments: 1,
+    },
+    metadata: {
+      type: 'text',
+      tags: ['partnership', 'news', 'announcement'],
+    },
+    metrics: {
+      engagementVelocity: 30,
+      qualityScore: 0.85,
+    },
+  },
 ];
 
 const mockAchievements: Achievement[] = [

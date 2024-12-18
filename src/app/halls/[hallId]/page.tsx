@@ -1,7 +1,8 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { ArchethicService } from '@/services/archethic';
-import { HallPosts } from '@/components/halls/HallPosts';
+import { HallTabs } from '@/components/halls/HallTabs';
+import { HallHeader } from '@/components/halls/HallHeader';
 
 interface HallPageProps {
   params: {
@@ -27,19 +28,9 @@ export default async function HallPage({ params }: HallPageProps) {
     <div className="container max-w-4xl mx-auto p-6">
       <div className="flex flex-col gap-6">
         {/* Hall Header */}
-        <section className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{hall.name}</h1>
-            <p className="text-muted-foreground">{hall.description}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground">
-              {hall.metrics.activeMembers} members
-            </div>
-          </div>
-        </section>
+        <HallHeader hall={hall} />
 
-        {/* Hall Content */}
+        {/* Hall Content with Tabs */}
         <Suspense 
           fallback={
             <div className="flex flex-col gap-6 animate-pulse">
@@ -48,7 +39,7 @@ export default async function HallPage({ params }: HallPageProps) {
             </div>
           }
         >
-          <HallPosts hallId={params.hallId} />
+          <HallTabs hallId={params.hallId} />
         </Suspense>
       </div>
     </div>

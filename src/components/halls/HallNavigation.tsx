@@ -1,7 +1,7 @@
 'use client';
 
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { MobileHallNav } from './MobileHallNav';
@@ -46,6 +46,9 @@ export function HallNavigation({ currentHallId }: HallNavigationProps) {
         <SheetContent side="left" className="w-[80%] max-w-sm p-0">
           <SheetHeader className="p-4 border-b">
             <SheetTitle>Navigation</SheetTitle>
+            <SheetDescription>
+              Browse and navigate through available halls
+            </SheetDescription>
           </SheetHeader>
           <MobileHallNav 
             halls={halls} 
