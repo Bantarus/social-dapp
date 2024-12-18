@@ -17,7 +17,11 @@ interface PostFormData {
   tags: string[];
 }
 
-export const CreatePost = () => {
+interface CreatePostProps {
+  hallId: string;
+}
+
+export const CreatePost = ({ hallId }: CreatePostProps) => {
   const [isPosting, setIsPosting] = useState(false);
   const { createPost } = usePosts('fast');
   const [tags, setTags] = useState<string[]>([]);
@@ -44,6 +48,7 @@ export const CreatePost = () => {
           username: 'current_user',
           influence: 0,
         },
+        hallId,
         zone: 'fast',
         metadata: {
           type: data.type,
