@@ -1,18 +1,9 @@
-import { YieldZone } from '@/components/zones/YieldZone';
-import { ArchethicService } from '@/services/archethic';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { FeaturedHallCard } from '@/components/halls/FeaturedHallCard';
 import { RecentActivityItem } from '@/components/halls/RecentActivityItem';
-
-// Since we need to fetch initial data for the YieldZone
-async function getInitialYieldMetrics() {
-  const archethicService = new ArchethicService();
-  // In a real implementation, we would get the user's address from the session/auth
-  const mockUserAddress = "mock_address";
-  return archethicService.getUserYieldMetrics(mockUserAddress);
-}
+import { ArchethicService } from '@/services/archethic';
 
 async function getFeaturedHalls() {
   const archethicService = new ArchethicService();
@@ -25,9 +16,7 @@ async function getRecentActivity() {
 }
 
 export default async function Home() {
-  // Fetch initial data
-  const [initialYieldMetrics, featuredHalls, recentActivity] = await Promise.all([
-    getInitialYieldMetrics(),
+  const [featuredHalls, recentActivity] = await Promise.all([
     getFeaturedHalls(),
     getRecentActivity(),
   ]);
@@ -54,11 +43,6 @@ export default async function Home() {
               </Link>
             </Button>
           </div>
-        </section>
-
-        {/* Yield Zone Section */}
-        <section className="py-6">
-          <YieldZone userMetrics={initialYieldMetrics} />
         </section>
 
         {/* Featured Halls Section */}

@@ -38,14 +38,19 @@ export function HallNavigation({ currentHallId }: HallNavigationProps) {
     return (
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="lg:hidden">
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle navigation</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="lg:hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 rounded-full shadow-sm bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+          >
+            <Menu className="h-4 w-4 mr-2" />
+            <span className="text-sm font-medium">Halls</span>
+            <span className="sr-only">Toggle halls navigation</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-[80%] max-w-sm p-0">
           <SheetHeader className="p-4 border-b">
-            <SheetTitle>Navigation</SheetTitle>
+            <SheetTitle>Halls Navigation</SheetTitle>
             <SheetDescription>
               Browse and navigate through available halls
             </SheetDescription>

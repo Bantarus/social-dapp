@@ -57,7 +57,7 @@ export function YieldZone({ userMetrics }: YieldZoneProps) {
         <CardContent className="p-4">
           <div className="flex justify-between items-center text-white">
             <div className="space-y-1">
-              <p className="text-sm font-medium">Available Yield</p>
+              <p className="text-sm font-medium">Available Rewards</p>
               <p className="text-2xl font-bold">
                 {userMetrics.claimableAmount.toFixed(2)} tokens
               </p>
