@@ -27,7 +27,7 @@ export function FeaturedHallCard({ hall }: FeaturedHallCardProps) {
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center text-sm text-muted-foreground">
             <Users className="h-4 w-4 mr-1" />
-            {hall.metrics.activeMembers} members
+            {0} members
           </div>
           <Button variant="secondary" size="sm" asChild>
             <Link href={`/halls/${hall.id}`}>

@@ -7,10 +7,12 @@ import { useHallsStore } from '@/store/hallsStore';
 export function useHalls() {
   const { halls, fetchHalls, isLoading, error } = useHallsStore();
 
-  // Still use React Query for caching and background updates
-  useQuery({
+  useQuery<Hall[], Error>({
     queryKey: ['halls'],
-    queryFn: fetchHalls,
+    queryFn: async () => {
+      await fetchHalls();
+      return halls;
+    },
     initialData: halls,
   });
 
@@ -19,33 +21,27 @@ export function useHalls() {
 
 export function useHall(hallId: string) {
   const { currentHall, fetchHall, isLoading, error } = useHallsStore();
-
-  // Decode the hallId before using it
   const decodedHallId = decodeURIComponent(hallId);
 
-  useQuery({
+  useQuery<Hall | null, Error>({
     queryKey: ['halls', decodedHallId],
-    queryFn: () => fetchHall(decodedHallId),
+    queryFn: async () => {
+      await fetchHall(decodedHallId);
+      return currentHall;
+    },
     initialData: currentHall,
   });
 
-  return { 
-    hall: currentHall, 
-    isLoading, 
-    error 
-  };
+  return { hall: currentHall, isLoading, error };
 }
 
 export function useCreateHall() {
   const { addHall } = useHallsStore();
 
   return useMutation({
-    mutationFn: async (params: { 
-      hallData: Omit<Hall, 'id' | 'members' | 'metrics'>,
-      placeholders: HallContractParams 
-    }) => {
+    mutationFn: async (hallData: Omit<Hall, 'id' | 'members' | 'metrics'>) => {
       const service = await ArchethicService.getInstance();
-      const newHall = await service.createHall(params.hallData, params.placeholders);
+      const newHall = await service.createHall(hallData);
       addHall(newHall);
       return newHall;
     },

@@ -32,8 +32,8 @@ const createHallSchema = z.object({
 type CreateHallFormData = z.infer<typeof createHallSchema>;
 
 export function CreateHallForm() {
+  const { mutate: createHall, isPending } = useCreateHall();
   const router = useRouter();
-  const { mutateAsync: createHall, isPending } = useCreateHall();
   const [open, setOpen] = useState(false);
 
   const form = useForm<CreateHallFormData>({
@@ -41,7 +41,7 @@ export function CreateHallForm() {
     defaultValues: {
       name: '',
       description: '',
-      category: 'other',
+      category: 'general',
       settings: {
         isPrivate: false,
         requiresApproval: false,
@@ -52,35 +52,17 @@ export function CreateHallForm() {
 
   const onSubmit = async (data: CreateHallFormData) => {
     try {
-      const newHall = await createHall({
-        hallData: {
-          name: data.name,
-          description: data.description,
-          category: data.category,
-          settings: data.settings,
-        },
-        placeholders: {
-          HALL_NAME: data.name,
-          HALL_DESCRIPTION: data.description,
-          HALL_CATEGORY: data.category,
-          IS_PRIVATE: data.settings.isPrivate,
-          REQUIRES_APPROVAL: data.settings.requiresApproval,
-          MINIMUM_REPUTATION: data.settings.minimumReputation,
-        }
-      });
-      
+      await createHall(data);
       toast({
-        title: 'Success',
-        description: 'Hall created successfully!',
+        title: "Success",
+        description: "Hall created successfully",
       });
-
-      router.push(`/halls/${newHall.id}`);
+      router.push('/halls');
     } catch (error) {
-      console.error('Failed to create hall:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to create hall. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create hall",
+        variant: "destructive",
       });
     }
   };

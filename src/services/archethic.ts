@@ -106,7 +106,7 @@ export class ArchethicService {
   }
 
   // Real blockchain implementation to create a hall
-  async createHall(hallData: Omit<Hall, 'id' | 'members' | 'metrics'>, placeholders: HallContractParams): Promise<Hall> {
+  async createHall(hallData: Omit<Hall, 'id' | 'members' | 'metrics'>): Promise<Hall> {
     try {
       if(!this.archethicClient.rpcWallet) {
         throw new Error('RPC Wallet not initialized');
@@ -122,8 +122,8 @@ export class ArchethicService {
       const walletAccount = await this.archethicClient.rpcWallet.getCurrentAccount();
 
       // 1. Generate a seed and derive address for the hall contract
-      const hallSeed = Crypto.randomSecretKey(); // Generate random seed
-      const hallAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(hallSeed, 0)); // Get address at index 0
+      const hallSeed = Crypto.randomSecretKey();
+      const hallAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(hallSeed, 0));
       
       console.log('Generated hall address:', hallAddress);
 
@@ -143,7 +143,6 @@ export class ArchethicService {
 
       // 3. Deploy the smart contract using the generated seed
       const contractCode = generateHallContract({
-        ...placeholders,
         CREATOR_ADDRESS: walletAccount.genesisAddress.toUpperCase(),
         MASTER_ADDRESS: MASTER_CONTRACT_ADDRESS.toUpperCase(),
       });
