@@ -1,36 +1,53 @@
-import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
-import { ArchethicService } from '@/services/archethic';
+'use client';
+
+import { Suspense, useEffect } from 'react';
+import { notFound, useParams } from 'next/navigation';
 import { HallTabs } from '@/components/halls/HallTabs';
 import { HallHeader } from '@/components/halls/HallHeader';
+import { useHallsStore } from '@/store/hallsStore';
 
-interface HallPageProps {
-  params: {
-    hallId: string;
-  };
-}
-
-async function getHallData(hallId: string) {
-  const archethicService = ArchethicService.getInstance();
-  const hall = await archethicService.getHall(hallId);
+export default function HallPage() {
+  const params = useParams();
+  const { currentHall, fetchHall, isLoading, error } = useHallsStore();
   
-  if (!hall) {
-    notFound();
+  useEffect(() => {
+    if (!params?.hallId) return;
+    
+    // Debug logging
+    console.log('Raw params:', params);
+    console.log('Raw hallId:', params.hallId);
+    
+    // Get the hallId directly from the URL
+    const pathSegments = window.location.pathname.split('/');
+    const hallIdFromUrl = pathSegments[pathSegments.length - 1];
+    
+    console.log('Hall ID from URL:', hallIdFromUrl);
+    
+    if (hallIdFromUrl) {
+      fetchHall(hallIdFromUrl);
+    }
+  }, [params?.hallId, fetchHall]);
+
+  if (error) {
+    console.error('Failed to load hall:', error);
+    return <div>Error loading hall</div>;
   }
-  
-  return hall;
-}
 
-export default async function HallPage({ params }: HallPageProps) {
-  const hall = await getHallData(params.hallId);
+  if (isLoading || !currentHall) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="container max-w-4xl mx-auto p-6">
       <div className="flex flex-col gap-6">
-        {/* Hall Header */}
-        <HallHeader hall={hall} />
+        <Suspense 
+          fallback={
+            <div className="h-20 bg-gray-200 rounded-lg animate-pulse" />
+          }
+        >
+          <HallHeader hall={currentHall} />
+        </Suspense>
 
-        {/* Hall Content with Tabs */}
         <Suspense 
           fallback={
             <div className="flex flex-col gap-6 animate-pulse">
@@ -39,7 +56,7 @@ export default async function HallPage({ params }: HallPageProps) {
             </div>
           }
         >
-          <HallTabs hallId={params.hallId} />
+          <HallTabs />
         </Suspense>
       </div>
     </div>

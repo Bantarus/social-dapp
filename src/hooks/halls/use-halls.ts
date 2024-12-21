@@ -1,85 +1,92 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { type Hall } from '@/types/hall';
+import { HallContractParams} from '@/types/contracts'
 import { ArchethicService } from '@/services/archethic';
-
-const archethicService = ArchethicService.getInstance();
+import { useHallsStore } from '@/store/hallsStore';
 
 export function useHalls() {
-  return useQuery({
+  const { halls, fetchHalls, isLoading, error } = useHallsStore();
+
+  // Still use React Query for caching and background updates
+  useQuery({
     queryKey: ['halls'],
-    queryFn: () => archethicService.getHalls(),
+    queryFn: fetchHalls,
+    initialData: halls,
   });
+
+  return { halls, isLoading, error };
 }
 
 export function useHall(hallId: string) {
-  return useQuery({
-    queryKey: ['halls', hallId],
-    queryFn: () => archethicService.getHall(hallId),
+  const { currentHall, fetchHall, isLoading, error } = useHallsStore();
+
+  // Decode the hallId before using it
+  const decodedHallId = decodeURIComponent(hallId);
+
+  useQuery({
+    queryKey: ['halls', decodedHallId],
+    queryFn: () => fetchHall(decodedHallId),
+    initialData: currentHall,
   });
+
+  return { 
+    hall: currentHall, 
+    isLoading, 
+    error 
+  };
 }
 
 export function useCreateHall() {
-  const queryClient = useQueryClient();
+  const { addHall } = useHallsStore();
 
   return useMutation({
-    mutationFn: (hallData: Partial<Hall>) => archethicService.createHall(hallData),
-    onSuccess: (newHall) => {
-      queryClient.setQueryData<Hall[]>(['halls'], (old = []) => [...old, newHall]);
+    mutationFn: async (params: { 
+      hallData: Omit<Hall, 'id' | 'members' | 'metrics'>,
+      placeholders: HallContractParams 
+    }) => {
+      const service = await ArchethicService.getInstance();
+      const newHall = await service.createHall(params.hallData, params.placeholders);
+      addHall(newHall);
+      return newHall;
     },
   });
 }
 
 export function useJoinHall() {
-  const queryClient = useQueryClient();
+  const { updateHall } = useHallsStore();
 
   return useMutation({
-    mutationFn: ({ hallId, userAddress }: { hallId: string; userAddress: string }) =>
-      archethicService.joinHall(hallId, userAddress),
-    onSuccess: (updatedHall) => {
-      queryClient.setQueryData<Hall[]>(['halls'], (old = []) =>
-        old.map(h => (h.id === updatedHall.id ? updatedHall : h))
-      );
-      queryClient.setQueryData(['halls', updatedHall.id], updatedHall);
+    mutationFn: async ({ hallId, userAddress }: { hallId: string; userAddress: string }) => {
+      const service = await ArchethicService.getInstance();
+      const updatedHall = await service.joinHall(hallId);
+      updateHall(updatedHall);
+      return updatedHall;
     },
   });
 }
 
 export function useLeaveHall() {
-  const queryClient = useQueryClient();
+  const { updateHall } = useHallsStore();
 
   return useMutation({
-    mutationFn: ({ hallId, userAddress }: { hallId: string; userAddress: string }) =>
-      archethicService.leaveHall(hallId, userAddress),
-    onSuccess: (_, { hallId, userAddress }) => {
-      queryClient.setQueryData<Hall[]>(['halls'], (old = []) =>
-        old.map(h => {
-          if (h.id !== hallId) return h;
-          return {
-            ...h,
-            members: h.members.filter(m => m.address !== userAddress),
-            metrics: {
-              ...h.metrics,
-              activeMembers: Math.max(0, h.metrics.activeMembers - 1),
-            },
-          };
-        })
-      );
-      queryClient.invalidateQueries({ queryKey: ['halls', hallId] });
+    mutationFn: async ({ hallId, userAddress }: { hallId: string; userAddress: string }) => {
+      const service = await ArchethicService.getInstance();
+      const updatedHall = await service.leaveHall(hallId);
+      updateHall(updatedHall);
+      return updatedHall;
     },
   });
 }
 
 export function useUpdateHallSettings() {
-  const queryClient = useQueryClient();
+  const { updateHall } = useHallsStore();
 
   return useMutation({
-    mutationFn: ({ hallId, settings }: { hallId: string; settings: Hall['settings'] }) =>
-      archethicService.updateHallSettings(hallId, settings),
-    onSuccess: (updatedHall) => {
-      queryClient.setQueryData<Hall[]>(['halls'], (old = []) =>
-        old.map(h => (h.id === updatedHall.id ? updatedHall : h))
-      );
-      queryClient.setQueryData(['halls', updatedHall.id], updatedHall);
+    mutationFn: async ({ hallId, settings }: { hallId: string; settings: Hall['settings'] }) => {
+      const service = await ArchethicService.getInstance();
+      const updatedHall = await service.updateHallSettings(hallId, settings);
+      updateHall(updatedHall);
+      return updatedHall;
     },
   });
 } 

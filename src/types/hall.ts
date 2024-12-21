@@ -1,9 +1,13 @@
 import { z } from 'zod';
+import { HALL_CATEGORIES } from '@/lib/constants/categories';
+
+const categoryValues = HALL_CATEGORIES.map(cat => cat.value);
 
 export const HallSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
+  category: z.enum(categoryValues as [string, ...string[]]),
   icon: z.string().optional(),
   members: z.array(z.object({
     address: z.string(),

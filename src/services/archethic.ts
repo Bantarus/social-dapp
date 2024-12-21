@@ -1,888 +1,663 @@
 import { Post } from '@/types/post';
 import { Achievement } from '@/types/achievement';
-import { YieldSlot, UserYieldMetrics } from '@/types/yield';
 import { Hall } from '@/types/hall';
+import Archethic, { Utils, Crypto, Contract, ConnectionState } from '@archethicjs/sdk';
+import { generateHallContract } from '@/lib/contracts/templates';
+import { HallContractParams } from '@/types/contracts';
 
-// Mock data for development
-const mockPosts: Post[] = [
-  {
-    id: '1',
-    content: 'Just deployed my first smart contract on Archethic! 🚀',
-    author: {
-      address: 'archethic_address_1',
-      username: 'alice',
-      influence: 75,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
-    zone: 'fast',
-    engagement: {
-      likes: 12,
-      echoes: 3,
-      comments: 5,
-    },
-    metadata: {
-      type: 'text',
-      tags: ['blockchain', 'development'],
-    },
-    metrics: {
-      engagementVelocity: 20,
-      qualityScore: 0.85,
-    },
-  },
-  {
-    id: '2',
-    content: 'Thread: Understanding Archethic UCO tokenomics\n\n1/5 Let\'s dive into how UCO works...',
-    author: {
-      address: 'archethic_address_2',
-      username: 'bob',
-      influence: 92,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(), // 36 hours ago
-    zone: 'cruise',
-    engagement: {
-      likes: 45,
-      echoes: 15,
-      comments: 8,
-    },
-    metadata: {
-      type: 'thread',
-      tags: ['UCO', 'tokenomics', 'education'],
-    },
-    metrics: {
-      engagementVelocity: 5,
-      qualityScore: 0.95,
-    },
-  },
-  {
-    id: '3',
-    content: 'Guide: Setting up your first Archethic node',
-    author: {
-      address: 'archethic_address_1',
-      username: 'alice',
-      influence: 75,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 72 hours ago
-    zone: 'archive',
-    engagement: {
-      likes: 120,
-      echoes: 45,
-      comments: 23,
-    },
-    metadata: {
-      type: 'guide',
-      tags: ['node', 'tutorial', 'blockchain'],
-    },
-    metrics: {
-      engagementVelocity: 2,
-      qualityScore: 0.98,
-    },
-  },
-  // Adding more mock posts for scrolling test
-  {
-    id: '4',
-    content: 'Just discovered an amazing optimization technique for smart contracts! Here\'s how it works...',
-    author: {
-      address: 'archethic_address_3',
-      username: 'charlie',
-      influence: 88,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-    zone: 'fast',
-    engagement: {
-      likes: 8,
-      echoes: 2,
-      comments: 3,
-    },
-    metadata: {
-      type: 'text',
-      tags: ['optimization', 'smart-contracts'],
-    },
-    metrics: {
-      engagementVelocity: 15,
-      qualityScore: 0.82,
-    },
-  },
-  {
-    id: '5',
-    content: 'Guide: Advanced Transaction Chain Patterns in Archethic',
-    author: {
-      address: 'archethic_address_4',
-      username: 'dave',
-      influence: 95,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 minutes ago
-    zone: 'fast',
-    engagement: {
-      likes: 15,
-      echoes: 7,
-      comments: 4,
-    },
-    metadata: {
-      type: 'guide',
-      tags: ['advanced', 'chains', 'patterns'],
-    },
-    metrics: {
-      engagementVelocity: 25,
-      qualityScore: 0.91,
-    },
-  },
-  {
-    id: '6',
-    content: 'Weekly Update: Archethic Network Statistics and Growth Metrics',
-    author: {
-      address: 'archethic_address_5',
-      username: 'emma',
-      influence: 82,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 48 hours ago
-    zone: 'cruise',
-    engagement: {
-      likes: 67,
-      echoes: 23,
-      comments: 15,
-    },
-    metadata: {
-      type: 'text',
-      tags: ['statistics', 'growth', 'network'],
-    },
-    metrics: {
-      engagementVelocity: 8,
-      qualityScore: 0.88,
-    },
-  },
-  {
-    id: '7',
-    content: 'Research: Comparing Archethic\'s ARCH Consensus with Other Protocols',
-    author: {
-      address: 'archethic_address_2',
-      username: 'bob',
-      influence: 92,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 40).toISOString(), // 40 hours ago
-    zone: 'cruise',
-    engagement: {
-      likes: 89,
-      echoes: 34,
-      comments: 21,
-    },
-    metadata: {
-      type: 'thread',
-      tags: ['research', 'consensus', 'comparison'],
-    },
-    metrics: {
-      engagementVelocity: 12,
-      qualityScore: 0.94,
-    },
-  },
-  {
-    id: '8',
-    content: 'Historical Analysis: First Year of Archethic Mainnet',
-    author: {
-      address: 'archethic_address_1',
-      username: 'alice',
-      influence: 75,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 80).toISOString(), // 80 hours ago
-    zone: 'archive',
-    engagement: {
-      likes: 156,
-      echoes: 78,
-      comments: 45,
-    },
-    metadata: {
-      type: 'guide',
-      tags: ['history', 'analysis', 'mainnet'],
-    },
-    metrics: {
-      engagementVelocity: 1,
-      qualityScore: 0.96,
-    },
-  },
-  {
-    id: '9',
-    content: 'Community Spotlight: Best Projects Built on Archethic in 2023',
-    author: {
-      address: 'archethic_address_3',
-      username: 'charlie',
-      influence: 88,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 75).toISOString(), // 75 hours ago
-    zone: 'archive',
-    engagement: {
-      likes: 234,
-      echoes: 112,
-      comments: 67,
-    },
-    metadata: {
-      type: 'thread',
-      tags: ['community', 'projects', 'spotlight'],
-    },
-    metrics: {
-      engagementVelocity: 1.5,
-      qualityScore: 0.97,
-    },
-  },
-  {
-    id: '10',
-    content: 'Breaking: New Partnership Announcement!',
-    author: {
-      address: 'archethic_address_5',
-      username: 'emma',
-      influence: 82,
-    },
-    hallId: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 minutes ago
-    zone: 'fast',
-    engagement: {
-      likes: 5,
-      echoes: 2,
-      comments: 1,
-    },
-    metadata: {
-      type: 'text',
-      tags: ['partnership', 'news', 'announcement'],
-    },
-    metrics: {
-      engagementVelocity: 30,
-      qualityScore: 0.85,
-    },
-  },
-];
+// Import mock data
+import { mockPosts } from '@/lib/mocks/posts';
+import { mockHalls } from '@/lib/mocks/halls';
+import { mockAchievements } from '@/lib/mocks/achievements';
 
-const mockAchievements: Achievement[] = [
-  {
-    id: "1",
-    title: "First Steps",
-    description: "Begin your journey in the Fast Lane",
-    type: "milestone",
-    progress: 100,
-    requirements: [
-      { type: "Create first post", count: 1, completed: true }
-    ],
-    rewards: {
-      energyBoost: 10,
-      influencePoints: 5
-    },
-    completedAt: new Date().toISOString()
-  },
-  {
-    id: "2",
-    title: "Chain Reactor",
-    description: "Start a chain of engagement",
-    type: "chain",
-    progress: 60,
-    requirements: [
-      { type: "Get post echoes", count: 5, completed: true },
-      { type: "Achieve engagement velocity", count: 10, completed: false }
-    ],
-    rewards: {
-      maxEnergyIncrease: 20,
-      influencePoints: 15
-    }
-  },
-  {
-    id: "3",
-    title: "Community Event Star",
-    description: "Participate in weekly challenge",
-    type: "event",
-    progress: 30,
-    requirements: [
-      { type: "Event participation", count: 3, completed: false }
-    ],
-    rewards: {
-      energyBoost: 25,
-      influencePoints: 20
-    }
-  }
-];
+// Contract addresses
+const MASTER_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_MASTER_CONTRACT_ADDRESS;
+const archethicEndpoint = process.env.NEXT_PUBLIC_ARCHETHIC_ENDPOINT || "https://testnet.archethic.net";
 
-// Mock data for halls
-const mockHalls: Hall[] = [
-  {
-    id: '1',
-    name: "Developers' Hall",
-    description: "A space for developers to share knowledge and discuss tech",
-    members: [
-      {
-        address: 'archethic_address_1',
-        role: 'admin',
-        reputation: 95,
-      },
-      {
-        address: 'archethic_address_2',
-        role: 'moderator',
-        reputation: 85,
-      }
-    ],
-    metrics: {
-      totalPosts: 150,
-      activeMembers: 45,
-      energyPool: 1000,
-      unreadCount: 5,
-    },
-    settings: {
-      isPrivate: false,
-      requiresApproval: false,
-      minimumReputation: 0,
-    }
-  },
-  {
-    id: '2',
-    name: "Artists' Corner",
-    description: "Share and discuss creative works and artistic endeavors",
-    members: [
-      {
-        address: 'archethic_address_3',
-        role: 'admin',
-        reputation: 88,
-      }
-    ],
-    metrics: {
-      totalPosts: 89,
-      activeMembers: 32,
-      energyPool: 750,
-      unreadCount: 2,
-    },
-    settings: {
-      isPrivate: false,
-      requiresApproval: false,
-      minimumReputation: 0,
-    }
-  },
-  {
-    id: '3',
-    name: "Builders' Guild",
-    description: "For those building the future of web3 and blockchain",
-    members: [
-      {
-        address: 'archethic_address_1',
-        role: 'member',
-        reputation: 75,
-      },
-      {
-        address: 'archethic_address_4',
-        role: 'admin',
-        reputation: 92,
-      }
-    ],
-    metrics: {
-      totalPosts: 234,
-      activeMembers: 67,
-      energyPool: 1500,
-      unreadCount: 8,
-    },
-    settings: {
-      isPrivate: false,
-      requiresApproval: true,
-      minimumReputation: 10,
-    }
-  },
-  {
-    id: '4',
-    name: "Traders' Tavern",
-    description: "Discuss trading strategies and market analysis",
-    members: [],
-    metrics: {
-      totalPosts: 56,
-      activeMembers: 23,
-      energyPool: 500,
-      unreadCount: 3,
-    },
-    settings: {
-      isPrivate: false,
-      requiresApproval: false,
-      minimumReputation: 0,
-    }
-  },
-  {
-    id: '5',
-    name: "Writers' Workshop",
-    description: "A space for writers to share and improve their craft",
-    members: [],
-    metrics: {
-      totalPosts: 78,
-      activeMembers: 28,
-      energyPool: 600,
-      unreadCount: 1,
-    },
-    settings: {
-      isPrivate: false,
-      requiresApproval: false,
-      minimumReputation: 0,
-    }
-  }
-];
-
-// Mock transaction chain functions
 export class ArchethicService {
   private static instance: ArchethicService;
   private posts: Post[] = [...mockPosts];
   private halls: Hall[] = [...mockHalls];
+  private archethic: Archethic;
+  private rpcWallet: any;
+  private isConnected: boolean = false;
+  private archethicClient: Archethic;
+  private walletAccount: any;
 
-  public constructor() {
-    console.log('ArchethicService constructor - Initial posts:', this.posts); // Debug initial posts
+  private constructor() {
+    this.archethic = new Archethic(archethicEndpoint);
+    this.archethicClient = new Archethic(undefined);
+    console.log('ArchethicService constructor initialized');
   }
 
-  public static getInstance(): ArchethicService {
+  public static async getInstance(): Promise<ArchethicService> {
     if (!ArchethicService.instance) {
       ArchethicService.instance = new ArchethicService();
-      console.log('Created new ArchethicService instance'); // Debug instance creation
+      await ArchethicService.instance.connect();
     }
     return ArchethicService.instance;
   }
 
-  // Mock function to create a post transaction
-  async createPost(postData: Partial<Post>): Promise<Post> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Create a new post with default values and provided data
-    const newPost: Post = {
-      id: `post_${Date.now()}`,
-      content: postData.content || '',
-      author: postData.author || {
-        address: '',
-        username: '',
-        influence: 0,
-      },
-      hallId: postData.hallId || '',
-      timestamp: new Date().toISOString(),
-      zone: postData.zone || 'fast',
-      engagement: {
-        likes: 0,
-        echoes: 0,
-        comments: 0,
-      },
-      metadata: {
-        type: postData.metadata?.type || 'text',
-        tags: postData.metadata?.tags || [],
-      },
-      metrics: {
-        engagementVelocity: 0,
-        qualityScore: 0.5,
-      },
-    };
-
-    // Add to mock posts array
-    this.posts.unshift(newPost);
-
-    return newPost;
-  }
-
-  // Mock function to fetch posts by zone
-  async getPostsByZone(zone: 'fast' | 'cruise' | 'archive', hallId?: string): Promise<Post[]> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    let filteredPosts = this.posts.filter(post => post.zone === zone);
-    
-    // If hallId is provided, filter by hall
-    if (hallId) {
-      filteredPosts = filteredPosts.filter(post => post.hallId === hallId);
+  private async connect(): Promise<void> {
+    if (!this.isConnected) {
+      try {
+        await this.archethic.connect();
+        this.isConnected = true;
+        console.log("Connected to Archethic");
+      } catch (error) {
+        console.error("Failed to connect to Archethic:", error);
+        throw error;
+      }
     }
-
-    console.log('getPostsByZone called with:', { zone, hallId }); // Debug log
-    console.log('Filtered posts:', filteredPosts); // Debug log
-
-    return filteredPosts;
   }
 
-  // Mock function to engage with a post (like, echo, comment)
-  async engageWithPost(
-    postId: string,
-    type: 'like' | 'echo' | 'comment',
-    data?: { content?: string }
-  ): Promise<Post> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const postIndex = this.posts.findIndex(p => p.id === postId);
-    if (postIndex === -1) throw new Error('Post not found');
-
-    const post = { ...this.posts[postIndex] };
-    
-    // Type-safe engagement update
-    switch (type) {
-      case 'like':
-        post.engagement.likes++;
-        break;
-      case 'echo':
-        post.engagement.echoes++;
-        break;
-      case 'comment':
-        post.engagement.comments++;
-        break;
-    }
-    
-    // Update metrics
-    post.metrics.engagementVelocity = this.calculateEngagementVelocity(post);
-    post.metrics.qualityScore = this.calculateQualityScore(post);
-
-    this.posts[postIndex] = post;
-    return post;
-  }
-
-  // Mock function to get user profile
-  async getUserProfile(address: string): Promise<{
-    address: string;
-    username: string;
-    influence: number;
+  // Wallet connection management
+  async connectWallet(): Promise<{
+    connected: boolean;
+    account?: string;
+    genesisAddress?: string;
+    endpoint?: string;
+    error?: string;
   }> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // Mock user data
-    return {
-      address,
-      username: address.slice(0, 8),
-      influence: Math.floor(Math.random() * 100),
-    };
-  }
-
-  // Mock function to get a specific hall
-  async getHall(hallId: string): Promise<Hall | null> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const hall = this.halls.find(h => h.id === hallId);
-    return hall || null;
-  }
-
-  // Helper functions for calculating metrics
-  private calculateInitialQualityScore(post: Omit<Post, 'id' | 'timestamp' | 'metrics'>): number {
-    // Simple mock quality score based on content length and type
-    const lengthScore = Math.min(post.content.length / 1000, 1);
-    const typeScore = post.metadata.type === 'guide' ? 1 : 0.7;
-    return (lengthScore + typeScore) / 2;
-  }
-
-  private calculateEngagementVelocity(post: Post): number {
-    const totalEngagement = 
-      post.engagement.likes + 
-      post.engagement.echoes * 2 + 
-      post.engagement.comments * 3;
-    
-    const ageInHours = 
-      (Date.now() - new Date(post.timestamp).getTime()) / (1000 * 60 * 60);
-    
-    return totalEngagement / Math.max(ageInHours, 1);
-  }
-
-  private calculateQualityScore(post: Post): number {
-    const engagementScore = Math.min(
-      (post.engagement.likes + post.engagement.echoes * 2 + post.engagement.comments * 3) / 100,
-      1
-    );
-    return (post.metrics.qualityScore + engagementScore) / 2;
-  }
-
-  async getAchievements(): Promise<Achievement[]> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    console.log('Fetching achievements:', mockAchievements); // Debug log
-    return mockAchievements;
-  }
-
-  // Fetch active yield slots
-  async getActiveYieldSlots(): Promise<YieldSlot[]> {
-    // Mock implementation - replace with actual blockchain interaction
-    return [
-      {
-        id: "1",
-        advertiser: {
-          address: "0x123...",
-          name: "DeFi Protocol",
-          verified: true,
-        },
-        content: {
-          title: "Launch Your DeFi Project",
-          description: "Get early access to our new liquidity pools",
-          callToAction: {
-            text: "Join Now",
-            url: "https://example.com/defi",
-          },
-        },
-        metrics: {
-          bidAmount: 1000,
-          startTime: new Date().toISOString(),
-          duration: 24 * 60 * 60, // 24 hours in seconds
-          impressions: 1200,
-          engagement: 45,
-        },
-        distribution: {
-          userPool: 700, // 70%
-          platformPool: 200, // 20%
-          curatorPool: 100, // 10%
-        },
-      },
-      // Add more mock slots as needed
-    ];
-  }
-
-  // Get user yield metrics
-  async getUserYieldMetrics(userAddress: string): Promise<UserYieldMetrics> {
-    // Mock implementation - replace with actual blockchain interaction
-    return {
-      totalEarned: 1500,
-      lastClaim: new Date().toISOString(),
-      multiplier: 1.2,
-      claimableAmount: 45.5,
-    };
-  }
-
-  // Claim yield rewards
-  async claimYieldRewards(userAddress: string): Promise<boolean> {
     try {
-      // Mock implementation - replace with actual blockchain transaction
-      // Here you would:
-      // 1. Create a transaction to claim rewards
-      // 2. Sign it with user's wallet
-      // 3. Broadcast to the network
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate blockchain delay
-      return true;
+      if (!this.archethicClient.rpcWallet || this.archethicClient.rpcWallet  === undefined) {
+        throw new Error('RPC Wallet not initialized')
+      }
+      console.log('archethicClient', this.archethicClient)
+
+       // Attempt connection
+       await this.archethicClient.connect().catch((error) => {
+        console.error('Error connecting to Archethic:', error)
+        throw new Error('Error connecting to Archethic: ' + error)
+      })
+      console.log('passed connect')
+
+      await this.archethicClient.rpcWallet.setOrigin({
+        name: "UnfoldInn",
+        url: "https://testnet.app.unfoldinn.com"
+      });
+
+      // Get connection details
+      const { endpointUrl } = await this.archethicClient.rpcWallet.getEndpoint();
+      const walletAccount = await this.archethicClient.rpcWallet.getCurrentAccount();
+      
+      return {
+        connected: true,
+        account: walletAccount.shortName,
+        genesisAddress: walletAccount.genesisAddress,
+        endpoint: endpointUrl,
+      };
     } catch (error) {
-      console.error('Failed to claim yield rewards:', error);
-      return false;
+      console.error("Failed to connect wallet:", error);
+      return { connected: false };
     }
   }
 
-  // Place a bid for yield slot
-  async bidForYieldSlot(
-    advertiserAddress: string,
-    slotContent: Omit<YieldSlot['content'], 'id'>,
-    bidAmount: number,
-    duration: number
-  ): Promise<string> {
+  async disconnectWallet(): Promise<void> {
     try {
-      // Mock implementation - replace with actual blockchain transaction
-      // Here you would:
-      // 1. Create a transaction with bid details
-      // 2. Transfer tokens for the bid
-      // 3. Store slot content on chain
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return "mock_slot_id";
+      if (!this.archethicClient.rpcWallet) {
+        throw new Error('RPC Wallet not initialized');
+      }
+      await this.archethicClient.rpcWallet.close();
+      console.log('disconnected')
     } catch (error) {
-      console.error('Failed to place yield slot bid:', error);
+      console.error("Failed to disconnect wallet:", error);
+    }
+  }
+
+  // Real blockchain implementation to create a hall
+  async createHall(hallData: Omit<Hall, 'id' | 'members' | 'metrics'>, placeholders: HallContractParams): Promise<Hall> {
+    try {
+      if(!this.archethicClient.rpcWallet) {
+        throw new Error('RPC Wallet not initialized');
+      }
+
+      if(!MASTER_CONTRACT_ADDRESS) {
+        throw new Error('Master contract address not configured');
+      }
+      if (!process.env.NEXT_PUBLIC_FUNDING_AMOUNT) {
+        throw new Error('FUNDING_AMOUNT is not defined')
+      }
+
+      const walletAccount = await this.archethicClient.rpcWallet.getCurrentAccount();
+
+      // 1. Generate a seed and derive address for the hall contract
+      const hallSeed = Crypto.randomSecretKey(); // Generate random seed
+      const hallAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(hallSeed, 0)); // Get address at index 0
+      
+      console.log('Generated hall address:', hallAddress);
+
+      // 2. Fund the generated address with UCO using wallet
+      const fundingAmount = parseInt(process.env.NEXT_PUBLIC_FUNDING_AMOUNT || '0') * 10 ** 8; // Amount of UCO to fund
+      const fundingTx = this.archethicClient.transaction
+        .new()
+        .setType("transfer")
+        .addUCOTransfer(hallAddress, BigInt(fundingAmount));
+  
+      // Send funding transaction through wallet
+      const fundingResult = await this.archethicClient.rpcWallet.sendTransaction(fundingTx);
+      console.log('Funding transaction sent:', fundingResult);
+  
+      // Wait for confirmation to ensure funds are available
+      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay
+
+      // 3. Deploy the smart contract using the generated seed
+      const contractCode = generateHallContract({
+        ...placeholders,
+        CREATOR_ADDRESS: walletAccount.genesisAddress.toUpperCase(),
+        MASTER_ADDRESS: MASTER_CONTRACT_ADDRESS.toUpperCase(),
+      });
+
+      // Send contract deployment transaction directly to network
+      const storageNoncePublicKey = await this.archethic.network.getStorageNoncePublicKey();
+      const { encryptedSecret, authorizedKeys } = Crypto.encryptSecret(hallSeed, storageNoncePublicKey);
+
+      const deployTx = this.archethic.transaction
+        .new()
+        .setType("contract")
+        .setCode(contractCode)
+        .setContent(JSON.stringify({
+          ...hallData,
+          name: hallData.name,
+          description: hallData.description,
+          isPrivate: hallData.settings?.isPrivate || false,
+          requiresApproval: hallData.settings?.requiresApproval || false,
+          minimumReputation: hallData.settings?.minimumReputation || 0
+        }))
+        .addOwnership(encryptedSecret, authorizedKeys)
+        .build(hallSeed, 0);
+
+      let nbConfirmation = 0;
+
+      deployTx.originSign(Utils.originPrivateKey)
+      .on("requiredConfirmation", (nbConf: any) => {
+        console.log('Contract deployment confirmed:', nbConf)
+        nbConfirmation = nbConf
+        
+      })
+      .on("error", (context: any, reason: any) => {
+        console.error(reason)
+      
+      })
+      .send()
+
+      console.log('deployTx address : ', Utils.uint8ArrayToHex(deployTx.address))
+
+
+      const hallDeployedAddress = Utils.uint8ArrayToHex(deployTx.address);
+
+      console.log("hallData", hallData)
+       // 4. Register the task with master contract through wallet
+     console.log('MASTER_CONTRACT_ADDRESS : ', MASTER_CONTRACT_ADDRESS)
+     const registerTx = this.archethicClient.transaction
+     .new()
+     .setType("transfer")
+     .addRecipient(MASTER_CONTRACT_ADDRESS, "add_hall", [
+      hallDeployedAddress,
+       hallData.name,
+       hallData.description,
+       hallData.category,
+       hallData.settings?.isPrivate
+     ])
+
+     console.log('registerTx', registerTx)
+
+     // Send registration transaction through wallet
+    const registerResult = await this.archethicClient.rpcWallet.sendTransaction(registerTx)
+    .then((result) => {
+      console.log('Task registration transaction sent:', result)
+    })
+    .catch((error) => {
+      console.error("Failed to register task with master:", error)
+      throw error
+    })
+    
+
+      // Create hall object
+      const newHall: Hall = {
+        id: hallDeployedAddress,
+        name: hallData.name || '',
+        description: hallData.description || '',
+        category: hallData.category || '',
+        members: [{
+          address: walletAccount.genesisAddress,
+          role: 'admin',
+          reputation: 100,
+        }],
+        metrics: {
+          totalPosts: 0,
+          activeMembers: 1,
+          energyPool: 100,
+          unreadCount: 0,
+        },
+        settings: hallData.settings || {
+          isPrivate: false,
+          requiresApproval: false,
+          minimumReputation: 0,
+        },
+      };
+
+      
+      return newHall;
+    } catch (error) {
+      console.error('Failed to create hall:', error);
       throw error;
     }
   }
 
-  // Hall-related methods
-  async getHalls(): Promise<Hall[]> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return this.halls;
-  }
+  // Real blockchain implementation to join a hall
+  async joinHall(hallId: string): Promise<Hall> {
+    try {
+      if (!hallId || !this.archethic.rpcWallet) {
+        throw new Error('Hall ID and wallet connection are required');
+      }
 
-  async createHall(hallData: Partial<Hall>): Promise<Hall> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+      const walletAccount = await this.archethic.rpcWallet.getCurrentAccount();
 
-    const newHall: Hall = {
-      id: `hall_${Date.now()}`,
-      name: hallData.name || '',
-      description: hallData.description || '',
-      members: hallData.members || [],
-      metrics: {
-        totalPosts: 0,
-        activeMembers: 0,
-        energyPool: 100, // Initial energy pool
-        unreadCount: 0,
-      },
-      settings: hallData.settings || {
-        isPrivate: false,
-        requiresApproval: false,
-        minimumReputation: 0,
-      },
-    };
+      const txBuilder = this.archethic.transaction
+        .new()
+        .setType("transfer")
+        .addRecipient(MASTER_CONTRACT_ADDRESS as string, "join_hall", [hallId]);
 
-    this.halls.push(newHall);
-    return newHall;
-  }
+      await this.archethic.rpcWallet.sendTransaction(txBuilder);
 
-  async joinHall(hallId: string, userAddress: string): Promise<Hall> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+      // Get updated hall data
+      const hall = await this.getHall(hallId);
+      if (!hall) {
+        throw new Error('Hall not found after joining');
+      }
 
-    const hallIndex = this.halls.findIndex(h => h.id === hallId);
-    if (hallIndex === -1) throw new Error('Hall not found');
-
-    const hall = { ...this.halls[hallIndex] };
-    
-    // Check if user is already a member
-    if (hall.members.some(m => m.address === userAddress)) {
-      throw new Error('Already a member');
+      return hall;
+    } catch (error) {
+      console.error('Failed to join hall:', error);
+      throw error;
     }
-
-    // Add user as member
-    hall.members.push({
-      address: userAddress,
-      role: 'member',
-      reputation: 0,
-    });
-
-    hall.metrics.activeMembers++;
-    this.halls[hallIndex] = hall;
-    return hall;
   }
 
-  async leaveHall(hallId: string, userAddress: string): Promise<void> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+  // Real blockchain implementation to create a post
+  async createPost(postData: Partial<Post>): Promise<Post> {
+    try {
+      if (!postData.hallId || !this.archethic.rpcWallet) {
+        throw new Error('Hall ID and wallet connection are required');
+      }
 
-    const hallIndex = this.halls.findIndex(h => h.id === hallId);
-    if (hallIndex === -1) throw new Error('Hall not found');
+      const walletAccount = await this.archethic.rpcWallet.getCurrentAccount();
 
-    const hall = { ...this.halls[hallIndex] };
-    
-    // Remove user from members
-    hall.members = hall.members.filter(m => m.address !== userAddress);
-    hall.metrics.activeMembers = Math.max(0, hall.metrics.activeMembers - 1);
+      const txBuilder = this.archethic.transaction
+        .new()
+        .setType("transfer")
+        .addRecipient(postData.hallId as string, "create_post", [
+          postData.hallId,
+          postData.content,
+          postData.metadata?.type || 'text',
+          postData.metadata?.tags || [],
+          postData.zone || 'fast'
+        ]);
 
-    this.halls[hallIndex] = hall;
+      const response = await this.archethic.rpcWallet.sendTransaction(txBuilder);
+
+      // Create post object
+      const newPost: Post = {
+        id: Utils.uint8ArrayToHex(txBuilder.address),
+        content: postData.content || '',
+        author: {
+          address: walletAccount.genesisAddress,
+          username: walletAccount.shortName,
+          influence: 0,
+        },
+        hallId: postData.hallId,
+        timestamp: new Date().toISOString(),
+        zone: postData.zone || 'fast',
+        engagement: {
+          likes: 0,
+          echoes: 0,
+          comments: 0,
+        },
+        metadata: {
+          type: postData.metadata?.type || 'text',
+          tags: postData.metadata?.tags || [],
+        },
+        metrics: {
+          engagementVelocity: 0,
+          qualityScore: 0.5,
+        },
+      };
+
+      // Add to local cache
+      this.posts.unshift(newPost);
+      return newPost;
+    } catch (error) {
+      console.error('Failed to create post:', error);
+      throw error;
+    }
+  }
+
+  // Get posts by zone
+  async getPostsByZone(zone: 'fast' | 'cruise' | 'archive', hallId?: string): Promise<Post[]> {
+    try {
+      // Get posts from blockchain
+      const response = await this.archethic.network.callFunction(
+        MASTER_CONTRACT_ADDRESS as string,
+        "get_posts_by_zone",
+        [zone, hallId]
+      );
+
+      const posts = response.data;
+      
+      // Update local cache with new data
+      this.posts = posts;
+      
+      // Filter posts
+      return posts.filter((post: Post) => 
+        post.zone === zone && (!hallId || post.hallId === hallId)
+      );
+    } catch (error) {
+      console.error('Failed to get posts:', error);
+      // Fallback to local cache
+      return this.posts.filter(post => 
+        post.zone === zone && (!hallId || post.hallId === hallId)
+      );
+    }
+  }
+
+  // Get all halls
+  async getHalls(): Promise<Hall[]> {
+    try {
+      if (!MASTER_CONTRACT_ADDRESS) {
+        throw new Error('Master contract address not configured');
+      }
+
+
+
+      const hallsMap = await this.archethic.network.callFunction(
+        MASTER_CONTRACT_ADDRESS,
+        "get_halls",
+        []
+      );
+      console.log('Raw halls from contract:', hallsMap)
+
+       // Convert the map object to an array of tasks with correct property mapping
+       const halls = Object.entries(hallsMap).map(([id, hallData]: [string, any]) => ({
+        id,
+        ...hallData
+      }));
+
+      console.log('Halls:', halls)
+
+      // Update local cache
+      this.halls = halls;
+      return halls;
+    } catch (error) {
+      console.error('Failed to get halls:', error);
+      // Return cached halls in case of error
+      return this.halls;
+    }
+  }
+
+  // Get featured halls
+  async getFeaturedHalls(): Promise<Hall[]> {
+    try {
+      if (!MASTER_CONTRACT_ADDRESS) {
+        throw new Error('Master contract address not configured');
+      }
+
+      const result = await this.archethic.network.callFunction(
+        MASTER_CONTRACT_ADDRESS,
+        "get_featured_halls",
+        []
+      );
+
+      if (result?.data) {
+        return result.data;
+      }
+
+      // Fallback: return top halls based on metrics if no featured halls defined
+      const halls = await this.getHalls();
+      return halls
+        .sort((a, b) => {
+          // Sort by engagement metrics (active members + total posts)
+          const engagementA = a.metrics.activeMembers + a.metrics.totalPosts;
+          const engagementB = b.metrics.activeMembers + b.metrics.totalPosts;
+          return engagementB - engagementA;
+        })
+        .slice(0, 5); // Return top 5 halls
+    } catch (error) {
+      console.error('Failed to get featured halls:', error);
+      // Return mock featured halls in case of error
+      return this.halls
+        .sort((a, b) => {
+          const engagementA = a.metrics.activeMembers + a.metrics.totalPosts;
+          const engagementB = b.metrics.activeMembers + b.metrics.totalPosts;
+          return engagementB - engagementA;
+        })
+        .slice(0, 5);
+    }
+  }
+
+  // Get a specific hall
+  async getHall(hallId: string): Promise<Hall | null> {
+    try {
+      if (!hallId) {
+        throw new Error('Hall ID is required');
+      }
+
+      console.log('getHall called with:', hallId);
+
+      // Only clean if needed
+      const cleanHallId = hallId.includes('[') ? hallId.replace(/[\[\]]/g, '') : hallId;
+      console.log('Using hall ID:', cleanHallId);
+
+      const hallMap = await this.archethic.network.callFunction(
+        MASTER_CONTRACT_ADDRESS as string,
+        "get_hall",
+        [cleanHallId]
+      );
+      console.log('getHall response:', hallMap);
+
+      // Convert the map object to an hall with correct property mapping
+
+      const hall = {
+        id: cleanHallId,
+        ...hallMap
+      }
+
+      
+      
+      if (!hall) {
+        return this.halls.find(h => h.id === hallId) || null;
+      }
+
+      return hall;
+    } catch (error) {
+      console.error('Failed to get hall:', error);
+      return null;
+    }
+  }
+
+  // Get recent activity across all halls or for a specific hall
+  async getRecentActivity(hallId?: string): Promise<Array<{ post: Post; hall: Hall }>> {
+    try {
+      if (!MASTER_CONTRACT_ADDRESS) {
+        throw new Error('Master contract address not configured');
+      }
+
+      const result = await this.archethic.network.callFunction(
+        MASTER_CONTRACT_ADDRESS,
+        "get_recent_activity",
+        hallId ? [hallId] : []
+      );
+
+      if (result?.data) {
+        // Transform the data to include hall information
+        const activities = await Promise.all(
+          result.data.map(async (post: Post) => {
+            const hall = await this.getHall(post.hallId);
+            return {
+              post,
+              hall: hall!
+            };
+          })
+        );
+        return activities;
+      }
+
+      // If no blockchain data, fallback to local cache
+      let recentPosts = this.posts;
+      
+      // Filter by hall if specified
+      if (hallId) {
+        recentPosts = recentPosts.filter(post => post.hallId === hallId);
+      }
+
+      // Sort by timestamp (most recent first) and take last 20 posts
+      const sortedPosts = recentPosts
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 20);
+
+      // Add hall information to each post
+      const activities = await Promise.all(
+        sortedPosts.map(async (post) => {
+          const hall = await this.getHall(post.hallId);
+          return {
+            post,
+            hall: hall || {
+              id: post.hallId,
+              name: 'Unknown Hall',
+              description: '',
+              category: '',
+              members: [],
+              metrics: {
+                totalPosts: 0,
+                activeMembers: 0,
+                energyPool: 0,
+                unreadCount: 0
+              },
+              settings: {
+                isPrivate: false,
+                requiresApproval: false,
+                minimumReputation: 0
+              }
+            }
+          };
+        })
+      );
+
+      return activities;
+    } catch (error) {
+      console.error('Failed to get recent activity:', error);
+      
+      // Fallback to local cache with hall information
+      const activities = await Promise.all(
+        this.posts
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 20)
+          .map(async (post) => {
+            const hall = await this.getHall(post.hallId);
+            return {
+              post,
+              hall: hall || {
+                id: post.hallId,
+                name: 'Unknown Hall',
+                description: '',
+                category: '',
+                members: [],
+                metrics: {
+                  totalPosts: 0,
+                  activeMembers: 0,
+                  energyPool: 0,
+                  unreadCount: 0
+                },
+                settings: {
+                  isPrivate: false,
+                  requiresApproval: false,
+                  minimumReputation: 0
+                }
+              }
+            };
+          })
+      );
+
+      return activities;
+    }
+  }
+
+  // Get achievements
+  async getAchievements(): Promise<Achievement[]> {
+    try {
+      const response = await this.archethic.network.callFunction(
+        MASTER_CONTRACT_ADDRESS as string,
+        "get_achievements",
+        []
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get achievements:', error);
+      return mockAchievements;
+    }
+  }
+
+  subscribeToConnectionState(callback: (state: ConnectionState) => void) {
+    this.archethic.rpcWallet?.onconnectionstatechange(callback);
+    return () => {
+      this.archethic.rpcWallet?.unsubscribeconnectionstatechange();
+    };
+  }
+
+  async leaveHall(hallId: string): Promise<Hall> {
+    try {
+      if (!hallId || !this.archethic.rpcWallet) {
+        throw new Error('Hall ID and wallet connection are required');
+      }
+
+      const walletAccount = await this.archethic.rpcWallet.getCurrentAccount();
+
+      const txBuilder = this.archethic.transaction
+        .new()
+        .setType("transfer")
+        .addRecipient(MASTER_CONTRACT_ADDRESS as string, "leave_hall", [hallId]);
+
+      await this.archethic.rpcWallet.sendTransaction(txBuilder);
+
+      // Get updated hall data
+      const hall = await this.getHall(hallId);
+      if (!hall) {
+        throw new Error('Hall not found after leaving');
+      }
+
+      return hall;
+    } catch (error) {
+      console.error('Failed to leave hall:', error);
+      throw error;
+    }
   }
 
   async updateHallSettings(hallId: string, settings: Hall['settings']): Promise<Hall> {
-    // Simulate blockchain delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      if (!hallId || !this.archethic.rpcWallet) {
+        throw new Error('Hall ID and wallet connection are required');
+      }
 
-    const hallIndex = this.halls.findIndex(h => h.id === hallId);
-    if (hallIndex === -1) throw new Error('Hall not found');
+      const txBuilder = this.archethic.transaction
+        .new()
+        .setType("transfer")
+        .addRecipient(hallId, "update_settings", [
+          settings.isPrivate,
+          settings.requiresApproval,
+          settings.minimumReputation
+        ]);
 
-    const hall = { ...this.halls[hallIndex] };
-    hall.settings = settings;
-    this.halls[hallIndex] = hall;
-    return hall;
-  }
+      await this.archethic.rpcWallet.sendTransaction(txBuilder);
 
-  async getFeaturedHalls(): Promise<Hall[]> {
-    // Mock implementation - replace with actual blockchain call
-    return [
-      {
-        id: '1',
-        name: "Developers' Hall",
-        description: "A space for developers to share knowledge and collaborate",
-        icon: undefined,
-        metrics: {
-          totalPosts: 150,
-          activeMembers: 75,
-          energyPool: 1000,
-          unreadCount: 5,
-        },
-        members: [],
-        settings: {
-          isPrivate: false,
-          requiresApproval: false,
-          minimumReputation: 0,
-        },
-      },
-      {
-        id: '2',
-        name: "Artists' Corner",
-        description: "Share and discuss creative works in the digital space",
-        icon: undefined,
-        metrics: {
-          totalPosts: 200,
-          activeMembers: 120,
-          energyPool: 1500,
-          unreadCount: 8,
-        },
-        members: [],
-        settings: {
-          isPrivate: false,
-          requiresApproval: false,
-          minimumReputation: 0,
-        },
-      },
-      {
-        id: '3',
-        name: "Traders' Tavern",
-        description: "Discuss trading strategies and market analysis",
-        icon: undefined,
-        metrics: {
-          totalPosts: 180,
-          activeMembers: 90,
-          energyPool: 1200,
-          unreadCount: 3,
-        },
-        members: [],
-        settings: {
-          isPrivate: false,
-          requiresApproval: false,
-          minimumReputation: 0,
-        },
-      },
-    ];
-  }
+      // Get updated hall data
+      const hall = await this.getHall(hallId);
+      if (!hall) {
+        throw new Error('Hall not found after updating settings');
+      }
 
-  async getRecentActivity(): Promise<Array<{ post: Post; hall: Hall }>> {
-    // Mock implementation - replace with actual blockchain call
-    const halls = await this.getFeaturedHalls();
-    
-    return [
-      {
-        post: {
-          id: '1',
-          content: "Just launched a new project using Archethic blockchain!",
-          author: {
-            address: 'mock_address_1',
-            username: 'dev_enthusiast',
-            influence: 85,
-          },
-          hallId: halls[0].id,
-          timestamp: new Date().toISOString(),
-          zone: 'fast',
-          engagement: {
-            likes: 12,
-            echoes: 5,
-            comments: 3,
-          },
-          metadata: {
-            type: 'text',
-            tags: ['blockchain', 'development'],
-          },
-          metrics: {
-            engagementVelocity: 0.8,
-            qualityScore: 0.9,
-          },
-        },
-        hall: halls[0],
-      },
-      {
-        post: {
-          id: '2',
-          content: "Check out my latest digital art piece inspired by blockchain technology",
-          author: {
-            address: 'mock_address_2',
-            username: 'crypto_artist',
-            influence: 92,
-          },
-          hallId: halls[1].id,
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          zone: 'fast',
-          engagement: {
-            likes: 25,
-            echoes: 8,
-            comments: 6,
-          },
-          metadata: {
-            type: 'text',
-            tags: ['art', 'nft'],
-          },
-          metrics: {
-            engagementVelocity: 0.9,
-            qualityScore: 0.95,
-          },
-        },
-        hall: halls[1],
-      },
-    ];
+      return hall;
+    } catch (error) {
+      console.error('Failed to update hall settings:', error);
+      throw error;
+    }
   }
 } 

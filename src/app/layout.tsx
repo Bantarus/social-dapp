@@ -7,7 +7,7 @@ import { ClientLayout } from '@/components/layout/ClientLayout';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Unfoldinn',
+  title: 'UnfoldInn',
   description: 'A decentralized social platform built on Archethic',
 };
 

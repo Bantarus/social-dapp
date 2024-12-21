@@ -5,14 +5,14 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import { HallZone } from './HallZone';
 import { useScrollDirection } from '@/hooks/use-scroll-direction';
+import { useHallsStore } from '@/store/hallsStore';
 
-interface HallTabsProps {
-  hallId: string;
-}
-
-export function HallTabs({ hallId }: HallTabsProps) {
+export function HallTabs() {
+  const { currentHall } = useHallsStore();
   const { isMobile } = useMediaQuery();
   
+  if (!currentHall) return null;
+
   const tabs = [
     { value: 'fast', label: 'Fast Lane' },
     { value: 'cruise', label: 'Cruise' },
@@ -44,13 +44,13 @@ export function HallTabs({ hallId }: HallTabsProps) {
       </div>
 
       <TabsContent value="fast" className="mt-6">
-        <HallZone hallId={hallId} zone="fast" />
+        <HallZone hallId={currentHall.id} zone="fast" />
       </TabsContent>
       <TabsContent value="cruise" className="mt-6">
-        <HallZone hallId={hallId} zone="cruise" />
+        <HallZone hallId={currentHall.id} zone="cruise" />
       </TabsContent>
       <TabsContent value="archive" className="mt-6">
-        <HallZone hallId={hallId} zone="archive" />
+        <HallZone hallId={currentHall.id} zone="archive" />
       </TabsContent>
     </Tabs>
   );
