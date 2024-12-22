@@ -182,6 +182,20 @@ export class ArchethicService {
 
       console.log('deployTx address : ', Utils.uint8ArrayToHex(deployTx.address))
 
+      // Wait for sufficient confirmations before proceeding
+   await new Promise((resolve, reject) => {
+    const checkConfirmations = () => {
+      if (nbConfirmation>= 11) {
+        resolve(true);
+      } else if (nbConfirmation === -1) {
+        reject(new Error("Transaction failed"));
+      } else {
+       console.log('nbConfirmation : ', nbConfirmation)
+        setTimeout(checkConfirmations, 1000); // Check again in 1 second
+      }
+    };
+    checkConfirmations();
+  });
 
       const hallDeployedAddress = Utils.uint8ArrayToHex(deployTx.address);
 
@@ -274,57 +288,28 @@ export class ArchethicService {
   }
 
   // Real blockchain implementation to create a post
-  async createPost(postData: Partial<Post>): Promise<Post> {
+  async createPost(hallId: string, postData: Partial<Post>): Promise<boolean> {
     try {
-      if (!postData.hallId || !this.archethic.rpcWallet) {
+      if (!hallId || !this.archethicClient.rpcWallet) {
         throw new Error('Hall ID and wallet connection are required');
       }
 
-      const walletAccount = await this.archethic.rpcWallet.getCurrentAccount();
+      const walletAccount = await this.archethicClient.rpcWallet.getCurrentAccount();
 
-      const txBuilder = this.archethic.transaction
+      const txBuilder = this.archethicClient.transaction
         .new()
         .setType("transfer")
-        .addRecipient(postData.hallId as string, "create_post", [
-          postData.hallId,
+        .addRecipient(hallId, "create_post", [
           postData.content,
           postData.metadata?.type || 'text',
           postData.metadata?.tags || [],
-          postData.zone || 'fast'
         ]);
 
-      const response = await this.archethic.rpcWallet.sendTransaction(txBuilder);
+      const response = await this.archethicClient.rpcWallet.sendTransaction(txBuilder);
+      console.log('response', response)
 
-      // Create post object
-      const newPost: Post = {
-        id: Utils.uint8ArrayToHex(txBuilder.address),
-        content: postData.content || '',
-        author: {
-          address: walletAccount.genesisAddress,
-          username: walletAccount.shortName,
-          influence: 0,
-        },
-        hallId: postData.hallId,
-        timestamp: new Date().toISOString(),
-        zone: postData.zone || 'fast',
-        engagement: {
-          likes: 0,
-          echoes: 0,
-          comments: 0,
-        },
-        metadata: {
-          type: postData.metadata?.type || 'text',
-          tags: postData.metadata?.tags || [],
-        },
-        metrics: {
-          engagementVelocity: 0,
-          qualityScore: 0.5,
-        },
-      };
-
-      // Add to local cache
-      this.posts.unshift(newPost);
-      return newPost;
+   
+      return true;
     } catch (error) {
       console.error('Failed to create post:', error);
       throw error;
@@ -332,29 +317,33 @@ export class ArchethicService {
   }
 
   // Get posts by zone
-  async getPostsByZone(zone: 'fast' | 'cruise' | 'archive', hallId?: string): Promise<Post[]> {
+  async getPostsByZone(zone: 'fast' | 'cruise' | 'archive', hallId: string): Promise<Post[]> {
     try {
       // Get posts from blockchain
       const response = await this.archethic.network.callFunction(
-        MASTER_CONTRACT_ADDRESS as string,
+        hallId,
         "get_posts_by_zone",
-        [zone, hallId]
+        [zone]
       );
 
-      const posts = response.data;
+      // Convert the map object to an array of posts with correct property mapping
+      const posts = Object.entries(response.data).map(([id, postData]: [string, any]) => ({
+        id,
+        ...postData
+      }));
       
       // Update local cache with new data
       this.posts = posts;
       
       // Filter posts
       return posts.filter((post: Post) => 
-        post.zone === zone && (!hallId || post.hallId === hallId)
+        post.zone === zone && (!hallId || post.id === hallId)
       );
     } catch (error) {
       console.error('Failed to get posts:', error);
       // Fallback to local cache
       return this.posts.filter(post => 
-        post.zone === zone && (!hallId || post.hallId === hallId)
+        post.zone === zone && (!hallId || post.id === hallId)
       );
     }
   }

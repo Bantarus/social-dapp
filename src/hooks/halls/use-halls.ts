@@ -45,6 +45,10 @@ export function useCreateHall() {
       addHall(newHall);
       return newHall;
     },
+    onError: (error) => {
+      console.error('Failed to create hall:', error);
+      throw error;
+    }
   });
 }
 

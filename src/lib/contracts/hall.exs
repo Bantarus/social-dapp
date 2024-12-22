@@ -19,18 +19,19 @@ actions triggered_by: transaction, on: init(creation_address, name, description,
   genesis_address = Chain.get_genesis_address(creation_address)
   creation_transaction = Chain.get_transaction(creation_address)
   # Create initial member (creator) with admin role
+  creator_genesis_address = get_creator_address()
   initial_member = [
-    address: genesis_address,
+    address: creator_genesis_address,
     role: "admin",
     reputation: 100
   ]
 
-  members = Map.set(Map.new(),genesis_address, initial_member)
+  members = Map.set(Map.new(),creator_genesis_address, initial_member)
   
   # Initialize hall state
   hall = [
     id: String.to_hex(creation_address),
-    admin_address: get_creator_address(),
+    admin_address: creator_genesis_address,
     name: name,
     description: description,
     category: category,
@@ -91,7 +92,7 @@ actions triggered_by: transaction, on: join() do
   members = Map.get(hall,"members")
   
   new_member = [
-    address: member_genesis,
+    address: member_genesis_address,
     role: "member",
     reputation: 0
   ]
@@ -110,20 +111,20 @@ actions triggered_by: transaction, on: join() do
 end
 
 # Create post condition
-condition triggered_by: transaction, on: create_post(content, post_type, tags), as: [
+condition triggered_by: transaction, on: create_post(content, type, tags), as: [
   content: (
     hall = State.get("hall")
     previous_address = Chain.get_previous_address(transaction)
     member_genesis_address = Chain.get_genesis_address(previous_address)
     
-    # Verify hall exists and sender is a member
+    # Verify hall has been init and sender is a member
     members = Map.get(hall,"members")
     hall != nil && Map.get(members,member_genesis_address) != nil
   )
 ]
 
 # Create post action
-actions triggered_by: transaction, on: create_post(content, post_type, tags) do
+actions triggered_by: transaction, on: create_post(content, type, tags) do
   hall = State.get("hall")
   previous_address = Chain.get_previous_address(transaction)
   member_genesis_address = Chain.get_genesis_address(previous_address)
@@ -138,16 +139,15 @@ actions triggered_by: transaction, on: create_post(content, post_type, tags) do
     content: content,
     author: [
       address: member_genesis_address,
-      username: get_member_name(member_genesis_address),
-      reputation: member.reputation
+      name: "Anonymous",
+      reputation: 0
     ],
-    hallId: hall.id,
     timestamp: transaction.timestamp,
     engagement: [
       likes: 0,
     ],
     metadata: [
-      type: post_type,
+      type: type,
       tags: tags
     ],
     metrics: [
@@ -217,11 +217,10 @@ export fun get_posts_by_zone(zone) do
 end
 
 export fun get_creator_address() do
-
+  "0x${placeholders.CREATOR_ADDRESS}"
 end
 
 
 export fun get_master_address() do
-  # Replace with actual master contract address
-  "0000EC63E23DC8B2DD002BCFD96C9FEA1E83D9443B7F73D862455FB3ED855766F0DF"
+  "0x${placeholders.MASTER_ADDRESS}"
 end

@@ -32,7 +32,7 @@ const createHallSchema = z.object({
 type CreateHallFormData = z.infer<typeof createHallSchema>;
 
 export function CreateHallForm() {
-  const { mutate: createHall, isPending } = useCreateHall();
+  const { mutateAsync: createHall, isPending } = useCreateHall();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -53,10 +53,12 @@ export function CreateHallForm() {
   const onSubmit = async (data: CreateHallFormData) => {
     try {
       await createHall(data);
+      
       toast({
         title: "Success",
         description: "Hall created successfully",
       });
+      
       router.push('/halls');
     } catch (error) {
       toast({

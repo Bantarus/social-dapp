@@ -8,7 +8,6 @@ export const PostSchema = z.object({
     username: z.string(),
     influence: z.number(),
   }),
-  hallId: z.string(),
   timestamp: z.string(),
   zone: z.enum(['fast', 'cruise', 'archive']),
   engagement: z.object({
