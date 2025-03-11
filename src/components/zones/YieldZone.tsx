@@ -1,3 +1,4 @@
+// src/components/zones/YieldZone.tsx
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,40 +12,21 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { YieldSlot, UserYieldMetrics } from "@/types/yield";
-import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle, TrendingUp, Coins } from "lucide-react";
-import { ArchethicService } from "@/services/archethic";
-
-const archethicService = new ArchethicService();
+import { useYield } from "@/hooks/use-yield";
 
 interface YieldZoneProps {
   userMetrics: UserYieldMetrics;
 }
 
 export function YieldZone({ userMetrics }: YieldZoneProps) {
-  // Fetch active slots using React Query directly with ArchethicService
-  const { data: activeSlots, isLoading } = useQuery<YieldSlot[]>({
-    queryKey: ['yieldSlots'],
-    queryFn: () => archethicService.getActiveYieldSlots(),
-    refetchInterval: 60000, // Refetch every minute
-  });
-
-  // Handle yield claiming directly with ArchethicService
-  const handleClaimYield = async () => {
-    try {
-      // In a real implementation, we would get the user's address from auth context
-      const mockUserAddress = "mock_address";
-      const success = await archethicService.claimYieldRewards(mockUserAddress);
-      if (success) {
-        // Trigger a refetch of user metrics or update local state
-        // You might want to add a toast notification here
-      }
-    } catch (error) {
-      console.error('Failed to claim yield:', error);
-      // Handle error (show toast notification, etc.)
-    }
-  };
+  const {
+    activeSlots,
+    isLoading,
+    isClaimingYield,
+    handleClaimYield
+  } = useYield(userMetrics);
 
   if (isLoading) {
     return <YieldZoneSkeleton />;
@@ -66,10 +48,10 @@ export function YieldZone({ userMetrics }: YieldZoneProps) {
               variant="secondary"
               size="sm"
               onClick={handleClaimYield}
-              disabled={userMetrics.claimableAmount <= 0}
+              disabled={userMetrics.claimableAmount <= 0 || isClaimingYield}
             >
               <Coins className="mr-2 h-4 w-4" />
-              Claim Rewards
+              {isClaimingYield ? 'Claiming...' : 'Claim Rewards'}
             </Button>
           </div>
         </CardContent>

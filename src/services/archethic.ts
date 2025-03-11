@@ -4,6 +4,8 @@ import { Hall } from '@/types/hall';
 import Archethic, { Utils, Crypto, Contract, ConnectionState } from '@archethicjs/sdk';
 import { generateHallContract } from '@/lib/contracts/templates';
 import { HallContractParams } from '@/types/contracts';
+import { createAppError, isAppError } from '@/lib/errors';
+import { useTransactionStore } from '@/store/transactionStore';
 
 // Import mock data
 import { mockPosts } from '@/lib/mocks/posts';
@@ -107,50 +109,69 @@ export class ArchethicService {
 
   // Real blockchain implementation to create a hall
   async createHall(hallData: Omit<Hall, 'id' | 'members' | 'metrics'>): Promise<Hall> {
+    // Get transaction store functions
+    const { addTransaction, updateTransaction } = useTransactionStore.getState();
+    
+    // Create a transaction entry
+    const txId = addTransaction({
+      type: 'hall_creation',
+      title: 'Creating Hall',
+      description: `Creating hall: ${hallData.name}`,
+      status: 'pending',
+    });
+    
     try {
       if(!this.archethicClient.rpcWallet) {
-        throw new Error('RPC Wallet not initialized');
+        throw createAppError('RPC Wallet not initialized', 'wallet_error');
       }
-
+  
       if(!MASTER_CONTRACT_ADDRESS) {
-        throw new Error('Master contract address not configured');
+        throw createAppError('Master contract address not configured', 'validation_error');
       }
-      if (!process.env.NEXT_PUBLIC_FUNDING_AMOUNT) {
-        throw new Error('FUNDING_AMOUNT is not defined')
-      }
-
+      
+      // Update transaction status
+      updateTransaction(txId, { status: 'broadcasting' });
+  
       const walletAccount = await this.archethicClient.rpcWallet.getCurrentAccount();
-
+  
       // 1. Generate a seed and derive address for the hall contract
       const hallSeed = Crypto.randomSecretKey();
       const hallAddress = Utils.uint8ArrayToHex(Crypto.deriveAddress(hallSeed, 0));
       
       console.log('Generated hall address:', hallAddress);
-
+  
       // 2. Fund the generated address with UCO using wallet
-      const fundingAmount = parseInt(process.env.NEXT_PUBLIC_FUNDING_AMOUNT || '0') * 10 ** 8; // Amount of UCO to fund
+      const fundingAmount = parseInt(process.env.NEXT_PUBLIC_FUNDING_AMOUNT || '0') * 10 ** 8;
       const fundingTx = this.archethicClient.transaction
         .new()
         .setType("transfer")
         .addUCOTransfer(hallAddress, BigInt(fundingAmount));
   
+      updateTransaction(txId, { 
+        description: `Funding new hall contract: ${hallData.name}` 
+      });
+      
       // Send funding transaction through wallet
       const fundingResult = await this.archethicClient.rpcWallet.sendTransaction(fundingTx);
       console.log('Funding transaction sent:', fundingResult);
   
       // Wait for confirmation to ensure funds are available
-      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay
-
+      await new Promise(resolve => setTimeout(resolve, 5000));
+  
       // 3. Deploy the smart contract using the generated seed
       const contractCode = generateHallContract({
         CREATOR_ADDRESS: walletAccount.genesisAddress.toUpperCase(),
         MASTER_ADDRESS: MASTER_CONTRACT_ADDRESS.toUpperCase(),
       });
-
+  
+      updateTransaction(txId, { 
+        description: `Deploying hall contract: ${hallData.name}` 
+      });
+  
       // Send contract deployment transaction directly to network
       const storageNoncePublicKey = await this.archethic.network.getStorageNoncePublicKey();
       const { encryptedSecret, authorizedKeys } = Crypto.encryptSecret(hallSeed, storageNoncePublicKey);
-
+  
       const deployTx = this.archethic.transaction
         .new()
         .setType("contract")
@@ -165,67 +186,67 @@ export class ArchethicService {
         }))
         .addOwnership(encryptedSecret, authorizedKeys)
         .build(hallSeed, 0);
-
+  
       let nbConfirmation = 0;
-
+  
       deployTx.originSign(Utils.originPrivateKey)
       .on("requiredConfirmation", (nbConf: any) => {
-        console.log('Contract deployment confirmed:', nbConf)
-        nbConfirmation = nbConf
+        console.log('Contract deployment confirmed:', nbConf);
+        nbConfirmation = nbConf;
         
+        // Update transaction status with confirmation count
+        updateTransaction(txId, { 
+          status: 'confirming',
+          confirmations: nbConf
+        });
       })
       .on("error", (context: any, reason: any) => {
-        console.error(reason)
-      
+        console.error(reason);
+        
+        // Update transaction status to failed
+        updateTransaction(txId, { 
+          status: 'failed',
+          error: new Error(reason)
+        });
       })
-      .send()
-
-      console.log('deployTx address : ', Utils.uint8ArrayToHex(deployTx.address))
-
-      // Wait for sufficient confirmations before proceeding
-   await new Promise((resolve, reject) => {
-    const checkConfirmations = () => {
-      if (nbConfirmation>= 11) {
-        resolve(true);
-      } else if (nbConfirmation === -1) {
-        reject(new Error("Transaction failed"));
-      } else {
-       console.log('nbConfirmation : ', nbConfirmation)
-        setTimeout(checkConfirmations, 1000); // Check again in 1 second
-      }
-    };
-    checkConfirmations();
-  });
-
+      .send();
+  
       const hallDeployedAddress = Utils.uint8ArrayToHex(deployTx.address);
-
-      console.log("hallData", hallData)
-       // 4. Register the task with master contract through wallet
-     console.log('MASTER_CONTRACT_ADDRESS : ', MASTER_CONTRACT_ADDRESS)
-     const registerTx = this.archethicClient.transaction
-     .new()
-     .setType("transfer")
-     .addRecipient(MASTER_CONTRACT_ADDRESS, "add_hall", [
-      hallDeployedAddress,
-       hallData.name,
-       hallData.description,
-       hallData.category,
-       hallData.settings?.isPrivate
-     ])
-
-     console.log('registerTx', registerTx)
-
-     // Send registration transaction through wallet
-    const registerResult = await this.archethicClient.rpcWallet.sendTransaction(registerTx)
-    .then((result) => {
-      console.log('Task registration transaction sent:', result)
-    })
-    .catch((error) => {
-      console.error("Failed to register task with master:", error)
-      throw error
-    })
-    
-
+  
+      // Wait for sufficient confirmations
+      await new Promise((resolve, reject) => {
+        const checkConfirmations = () => {
+          if (nbConfirmation >= 11) {
+            resolve(true);
+          } else if (nbConfirmation === -1) {
+            reject(new Error("Transaction failed"));
+          } else {
+            console.log('nbConfirmation : ', nbConfirmation);
+            setTimeout(checkConfirmations, 1000);
+          }
+        };
+        checkConfirmations();
+      });
+  
+      // 4. Register with master contract
+      updateTransaction(txId, { 
+        description: `Registering hall with master contract: ${hallData.name}` 
+      });
+      
+      const registerTx = this.archethicClient.transaction
+        .new()
+        .setType("transfer")
+        .addRecipient(MASTER_CONTRACT_ADDRESS, "add_hall", [
+          hallDeployedAddress,
+          hallData.name,
+          hallData.description,
+          hallData.category,
+          hallData.settings?.isPrivate
+        ]);
+  
+      // Send registration transaction
+      await this.archethicClient.rpcWallet.sendTransaction(registerTx);
+  
       // Create hall object
       const newHall: Hall = {
         id: hallDeployedAddress,
@@ -249,10 +270,21 @@ export class ArchethicService {
           minimumReputation: 0,
         },
       };
-
+  
+      // Update transaction status to confirmed
+      updateTransaction(txId, { 
+        status: 'confirmed',
+        description: `Successfully created hall: ${hallData.name}`
+      });
       
       return newHall;
     } catch (error) {
+      // Update transaction status to failed
+      updateTransaction(txId, { 
+        status: 'failed',
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      
       console.error('Failed to create hall:', error);
       throw error;
     }
@@ -426,39 +458,60 @@ export class ArchethicService {
   async getHall(hallId: string): Promise<Hall | null> {
     try {
       if (!hallId) {
-        throw new Error('Hall ID is required');
+        throw createAppError('Hall ID is required', 'validation_error');
       }
-
+  
       console.log('getHall called with:', hallId);
-
+  
       // Only clean if needed
       const cleanHallId = hallId.includes('[') ? hallId.replace(/[\[\]]/g, '') : hallId;
       console.log('Using hall ID:', cleanHallId);
-
-      const hallMap = await this.archethic.network.callFunction(
-        MASTER_CONTRACT_ADDRESS as string,
-        "get_hall",
-        [cleanHallId]
-      );
-      console.log('getHall response:', hallMap);
-
-      // Convert the map object to an hall with correct property mapping
-
-      const hall = {
-        id: cleanHallId,
-        ...hallMap
+  
+      try {
+        const hallMap = await this.archethic.network.callFunction(
+          MASTER_CONTRACT_ADDRESS as string,
+          "get_hall",
+          [cleanHallId]
+        );
+        console.log('getHall response:', hallMap);
+  
+        if (!hallMap) {
+          // Look for hall in local cache
+          const localHall = this.halls.find(h => h.id === hallId);
+          if (localHall) return localHall;
+          
+          return null;
+        }
+  
+        // Convert the map object to a hall with correct property mapping
+        const hall = {
+          id: cleanHallId,
+          ...hallMap
+        };
+        
+        return hall;
+      } catch (networkError) {
+        throw createAppError(
+          'Failed to fetch hall from blockchain', 
+          'network_error',
+          networkError,
+          { hallId: cleanHallId }
+        );
       }
-
-      
-      
-      if (!hall) {
-        return this.halls.find(h => h.id === hallId) || null;
-      }
-
-      return hall;
     } catch (error) {
+      // Log the error for developers
       console.error('Failed to get hall:', error);
-      return null;
+      
+      // Re-throw AppErrors, wrap others
+      if (isAppError(error)) {
+        throw error;
+      }
+      
+      throw createAppError(
+        'Failed to get hall information', 
+        'unknown_error',
+        error
+      );
     }
   }
 

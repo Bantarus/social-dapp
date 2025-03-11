@@ -1,8 +1,10 @@
+// src/app/layout.tsx
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { ClientLayout } from '@/components/layout/ClientLayout';
+import { TransactionNotifications } from '@/components/transaction/TransactionNotifications';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,6 +25,7 @@ export default function RootLayout({
           <ClientLayout>
             {children}
           </ClientLayout>
+          <TransactionNotifications />
         </Providers>
       </body>
     </html>

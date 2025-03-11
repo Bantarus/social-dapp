@@ -19,6 +19,7 @@
 
 #dev implementation documentation
 /implementation/
+/.cursor/rules
 # production
 /build
 
